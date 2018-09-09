@@ -3,9 +3,15 @@
 (require 'ox-gfm)
 (require 'cl)
 
+(defvar zulip-rc-directory "~/.zulip.d"
+  "Directory where zuliprc files for realms are stored")
+
 (defun zulip--create-auth-header (email token)
   (format "Basic %s" (base64-encode-string
                       (format "%s:%s" email token))))
+
+(defun zulip--get-config-path (realm)
+  (expand-file-name (format "%s.zuliprc" realm) zulip-rc-directory))
 
 (defun zulip--parse-config (path)
   (with-current-buffer (find-file-noselect path)
@@ -104,7 +110,7 @@
 
 (defun zulip-org-send-message-subtree ()
   (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
-         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (config-path (expand-file-name (format "%s.zuliprc" realm) zulip-rc-directory))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth))
@@ -115,7 +121,7 @@
 
 (defun zulip-org-update-message-subtree ()
   (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
-         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (config-path (expand-file-name (format "%s.zuliprc" realm) "~/.zulip.d"))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth))
@@ -143,7 +149,7 @@
 (defun zulip-org-set-stream-subtree ()
   (interactive)
   (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
-         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (config-path (zulip--get-config-path realm))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth)))
@@ -158,7 +164,7 @@
 (defun zulip-org-insert-stream-name ()
   (interactive)
   (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
-         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (config-path (zulip--get-config-path realm))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth)))
@@ -175,7 +181,7 @@
 (defun zulip-org-set-topic-subtree ()
   (interactive)
   (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
-         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (config-path (zulip--get-config-path realm))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth))
@@ -185,7 +191,7 @@
 (cl-defun zulip-org-get-stream-id-hook (&key data &allow-other-keys)
   (let* ((stream-id (cdr (assoc 'stream_id data)))
          (realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
-         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (config-path (zulip--get-config-path realm))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth)))
@@ -202,7 +208,7 @@
 (defun zulip-org-insert-mention ()
   (interactive)
   (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
-         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (config-path (zulip--get-config-path realm))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth)))
