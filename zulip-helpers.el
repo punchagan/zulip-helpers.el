@@ -39,6 +39,16 @@
      :parser 'json-read
      :success success-hook)))
 
+(defun zulip-get-all-streams (realm email token &optional success-hook)
+  "Get all streams for the realm"
+  (let ((url (format "https://%s/api/v1/streams" realm)))
+    (request
+     url
+     :type "GET"
+     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+     :parser 'json-read
+     :success success-hook)))
+
 ;; Org specific helpers
 
 (defun zulip-org-get-subtree-content ()
@@ -95,5 +105,36 @@
 (cl-defun zulip-org-update-success-hook (&key data &allow-other-keys)
   (message "Successfully updated message."))
 
+;;; streams
+
+(defun zulip-org-set-stream-subtree ()
+  (interactive)
+  (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
+         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (auth (zulip--parse-config config-path))
+         (email (car auth))
+         (token (cadr auth)))
+    (zulip-get-all-streams realm email token #'zulip-org-set-stream-hook)))
+
+(cl-defun zulip-org-set-stream-hook (&key data &allow-other-keys)
+  (let* ((streams (cdr (assoc 'streams data)))
+         (names (mapcar (lambda (stream) (cdr (assoc 'name stream))) streams))
+         (stream (completing-read "Stream: " names nil t)))
+    (org-set-property "ZULIP_STREAM" stream)))
+
+(defun zulip-org-insert-stream-name ()
+  (interactive)
+  (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
+         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (auth (zulip--parse-config config-path))
+         (email (car auth))
+         (token (cadr auth)))
+    (zulip-get-all-streams realm email token #'zulip-org-insert-stream-name-hook)))
+
+(cl-defun zulip-org-insert-stream-name-hook (&key data &allow-other-keys)
+  (let* ((streams (cdr (assoc 'streams data)))
+         (names (mapcar (lambda (stream) (cdr (assoc 'name stream))) streams))
+         (stream (completing-read "Stream: " names nil t)))
+    (insert (format "#**%s**" stream))))
 
 (provide 'zulip-helpers)
