@@ -1,4 +1,7 @@
 (require 'request)
+;; Used for exporting org to markdown format
+(require 'ox-gfm)
+(require 'cl)
 
 (defun zulip--create-auth-header (email token)
   (format "Basic %s" (base64-encode-string
