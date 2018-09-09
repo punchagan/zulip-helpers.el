@@ -49,6 +49,26 @@
      :parser 'json-read
      :success success-hook)))
 
+(defun zulip-get-stream-id (realm email token stream-name &optional success-hook)
+  "Get stream id using the name"
+  (let ((url (format "https://%s/api/v1/get_stream_id?stream=%s" realm stream-name)))
+    (request
+     url
+     :type "GET"
+     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+     :parser 'json-read
+     :success success-hook)))
+
+(defun zulip-get-stream-topics (realm email token stream-id &optional success-hook)
+  "Get topics for a stream"
+  (let ((url (format "https://%s/api/v1/users/me/%s/topics" realm stream-id)))
+    (request
+     url
+     :type "GET"
+     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+     :parser 'json-read
+     :success success-hook)))
+
 ;; Org specific helpers
 
 (defun zulip-org-get-subtree-content ()
@@ -136,5 +156,32 @@
          (names (mapcar (lambda (stream) (cdr (assoc 'name stream))) streams))
          (stream (completing-read "Stream: " names nil t)))
     (insert (format "#**%s**" stream))))
+
+;;; topics
+
+(defun zulip-org-set-topic-subtree ()
+  (interactive)
+  (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
+         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (auth (zulip--parse-config config-path))
+         (email (car auth))
+         (token (cadr auth))
+         (stream (cdr (assoc "ZULIP_STREAM" (org-entry-properties (point) "ZULIP_STREAM")))))
+    (zulip-get-stream-id realm email token stream #'zulip-org-get-stream-id-hook)))
+
+(cl-defun zulip-org-get-stream-id-hook (&key data &allow-other-keys)
+  (let* ((stream-id (cdr (assoc 'stream_id data)))
+         (realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
+         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (auth (zulip--parse-config config-path))
+         (email (car auth))
+         (token (cadr auth)))
+    (zulip-get-stream-topics realm email token stream-id #'zulip-org-stream-topics-hook)))
+
+(cl-defun zulip-org-stream-topics-hook (&key data &allow-other-keys)
+  (let* ((topics (cdr (assoc 'topics data)))
+         (names (mapcar (lambda (topic) (cdr (assoc 'name topic))) topics))
+         (topic (completing-read "Topic: " names nil t)))
+    (org-set-property "ZULIP_TOPIC" topic)))
 
 (provide 'zulip-helpers)
