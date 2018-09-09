@@ -69,6 +69,16 @@
      :parser 'json-read
      :success success-hook)))
 
+(defun zulip-get-users (realm email token &optional success-hook)
+  "Get all users"
+  (let ((url (format "https://%s/api/v1/users" realm)))
+    (request
+     url
+     :type "GET"
+     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+     :parser 'json-read
+     :success success-hook)))
+
 ;; Org specific helpers
 
 (defun zulip-org-get-subtree-content ()
@@ -183,5 +193,22 @@
          (names (mapcar (lambda (topic) (cdr (assoc 'name topic))) topics))
          (topic (completing-read "Topic: " names nil t)))
     (org-set-property "ZULIP_TOPIC" topic)))
+
+;;; users
+
+(defun zulip-org-insert-mention ()
+  (interactive)
+  (let* ((realm (cdr (assoc "ZULIP_REALM" (org-entry-properties (point) "ZULIP_REALM"))))
+         (config-path (expand-file-name (format "%s.zrc" realm) "~/.zulip.d"))
+         (auth (zulip--parse-config config-path))
+         (email (car auth))
+         (token (cadr auth)))
+    (zulip-get-users realm email token #'zulip-org-insert-mention-hook)))
+
+(cl-defun zulip-org-insert-mention-hook (&key data &allow-other-keys)
+  (let* ((users (cdr (assoc 'members data)))
+         (names (mapcar (lambda (user) (cdr (assoc 'full_name user))) users))
+         (user (completing-read "User: " names nil t)))
+    (insert (format "@**%s**" user))))
 
 (provide 'zulip-helpers)
