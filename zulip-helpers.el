@@ -60,7 +60,9 @@
 
 (defun zulip-get-stream-id (realm email token stream-name &optional success-hook)
   "Get stream id using the name"
-  (let ((url (format "https://%s/api/v1/get_stream_id?stream=%s" realm stream-name)))
+  (let ((url (format "https://%s/api/v1/get_stream_id?stream=%s"
+                     realm
+                     (url-hexify-string stream-name))))
     (request
      url
      :type "GET"
