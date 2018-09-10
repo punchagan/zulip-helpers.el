@@ -117,9 +117,12 @@
          (email (car auth))
          (token (cadr auth))
          (stream (org-entry-get (point) "ZULIP_STREAM"))
+         (send-to (org-entry-get (point) "ZULIP_SEND_TO"))
+         (to (or send-to stream))
+         (type (if send-to "private" "stream"))
          (topic (org-entry-get (point) "ZULIP_TOPIC"))
          (message (zulip-org-get-subtree-content)))
-    (zulip-send-message realm email token stream topic message nil #'zulip-org-send-success-hook)))
+    (zulip-send-message realm email token to topic message type #'zulip-org-send-success-hook)))
 
 (defun zulip-org-update-message-subtree ()
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
@@ -177,6 +180,24 @@
          (names (mapcar (lambda (stream) (cdr (assoc 'name stream))) streams))
          (stream (completing-read "Stream: " names nil t)))
     (insert (format "#**%s**" stream))))
+
+(defun zulip-org-set-send-to-subtree ()
+  (interactive)
+  (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
+         (config-path (zulip--get-config-path realm))
+         (auth (zulip--parse-config config-path))
+         (email (car auth))
+         (token (cadr auth)))
+    (zulip-get-users realm email token #'zulip-org-set-send-to-hook)))
+
+(cl-defun zulip-org-set-send-to-hook (&key data &allow-other-keys)
+  (let* ((users (cdr (assoc 'members data)))
+         (names (mapcar (lambda (user) (cons (cdr (assoc 'full_name user))
+                                             (cdr (assoc 'email user))))
+                        users))
+         (user (completing-read "User: " names nil t))
+         (email (cdr (assoc user names))))
+    (org-set-property "ZULIP_SEND_TO" email)))
 
 ;;; topics
 
