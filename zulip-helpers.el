@@ -23,13 +23,13 @@
       (setq token (buffer-substring (point) (line-end-position)))
       `(,email ,token))))
 
-(defun zulip-send-message (realm email token stream topic message &optional success-hook)
+(defun zulip-send-message (realm email token stream topic message &optional type success-hook)
   "Send a message to a given realm, stream & topic"
   (let ((url (format "https://%s/api/v1/messages" realm)))
     (request
      url
      :type "POST"
-     :data `(("type" . "stream")
+     :data `(("type" . ,(or type "stream"))
              ("to" . ,stream)
              ("subject" . ,topic)
              ("content" . ,message))
@@ -119,7 +119,7 @@
          (stream (org-entry-get (point) "ZULIP_STREAM"))
          (topic (org-entry-get (point) "ZULIP_TOPIC"))
          (message (zulip-org-get-subtree-content)))
-    (zulip-send-message realm email token stream topic message #'zulip-org-send-success-hook)))
+    (zulip-send-message realm email token stream topic message nil #'zulip-org-send-success-hook)))
 
 (defun zulip-org-update-message-subtree ()
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
