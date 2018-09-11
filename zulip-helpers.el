@@ -2,6 +2,7 @@
 ;; Used for exporting org to markdown format
 (require 'ox-gfm)
 (require 'cl)
+(require 's)
 
 (defvar zulip-rc-directory "~/.zulip.d"
   "Directory where zuliprc files for realms are stored")
@@ -44,6 +45,19 @@
      url
      :type "PATCH"
      :data `(("content" . ,message))
+     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+     :parser 'json-read
+     :success success-hook)))
+
+(defun zulip-get-messages (realm email token &optional anchor success-hook)
+  "Get messages"
+  (let* ((url (format "https://%s/api/v1/messages?num_before=0&num_after=0" realm)))
+    (setq url (if anchor
+                  (format "%s&anchor=%s" url anchor)
+                (format "%s&use_first_unread_anchor=true")))
+    (request
+     url
+     :type "GET"
      :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
      :parser 'json-read
      :success success-hook)))
@@ -242,5 +256,29 @@
          (names (mapcar (lambda (user) (cdr (assoc 'full_name user))) users))
          (user (completing-read "User: " names nil t)))
     (insert (format "@**%s**" user))))
+
+;; subtree from url
+
+(defun zulip-org-set-subtree-properties-from-url (url)
+  (interactive "sURL: ")
+  (let* ((parsed-url (url-generic-parse-url url))
+         (realm (url-host parsed-url))
+         (config-path (zulip--get-config-path realm))
+         (auth (zulip--parse-config config-path))
+         (email (car auth))
+         (token (cadr auth))
+         (target (s-split "/" (url-target parsed-url)))
+         (message-id (nth 6 target)))
+    (org-set-property "ZULIP_REALM" realm)
+    (when message-id
+      (zulip-get-messages realm email token message-id #'zulip-org-set-subtree-properties-hook))))
+
+(cl-defun zulip-org-set-subtree-properties-hook (&key data &allow-other-keys)
+  (let* ((messages (cdr (assoc 'messages data)))
+         (message (aref messages 0))
+         (stream (cdr (assoc 'display_recipient message)))
+         (topic (cdr (assoc 'subject message))))
+    (org-set-property "ZULIP_STREAM" stream)
+    (org-set-property "ZULIP_TOPIC" topic)))
 
 (provide 'zulip-helpers)
