@@ -49,12 +49,15 @@
      :parser 'json-read
      :success success-hook)))
 
-(defun zulip-get-messages (realm email token &optional anchor success-hook)
+(defun zulip-get-messages (realm email token num_before num_after &optional anchor success-hook)
   "Get messages"
-  (let* ((url (format "https://%s/api/v1/messages?num_before=0&num_after=0" realm)))
-    (setq url (if anchor
-                  (format "%s&anchor=%s" url anchor)
-                (format "%s&use_first_unread_anchor=true")))
+  (let* ((params `(("num_before" ,num_before)
+                   ("num_after" ,num_after)
+                   ,(if anchor
+                        `("anchor" ,anchor)
+                      `("use_first_unread_anchor" "true"))))
+         (query-string (url-build-query-string params))
+         (url (format "https://%s/api/v1/messages?%s" realm query-string)))
     (request
      url
      :type "GET"
@@ -271,7 +274,7 @@
          (message-id (nth 6 target)))
     (org-set-property "ZULIP_REALM" realm)
     (when message-id
-      (zulip-get-messages realm email token message-id #'zulip-org-set-subtree-properties-hook))))
+      (zulip-get-messages realm email token 0 0 message-id #'zulip-org-set-subtree-properties-hook))))
 
 (cl-defun zulip-org-set-subtree-properties-hook (&key data &allow-other-keys)
   (let* ((messages (cdr (assoc 'messages data)))
