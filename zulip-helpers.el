@@ -280,8 +280,10 @@
   (let* ((messages (cdr (assoc 'messages data)))
          (message (aref messages 0))
          (stream (cdr (assoc 'display_recipient message)))
-         (topic (cdr (assoc 'subject message))))
+         (topic (cdr (assoc 'subject message)))
+         (message-id (cdr (assoc 'id message))))
     (org-set-property "ZULIP_STREAM" stream)
-    (org-set-property "ZULIP_TOPIC" topic)))
+    (org-set-property "ZULIP_TOPIC" topic)
+    (org-set-property "ZULIP_MESSAGE_ID" (number-to-string message-id))))
 
 (provide 'zulip-helpers)
