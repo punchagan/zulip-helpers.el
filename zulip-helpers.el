@@ -228,6 +228,11 @@
          (stream (org-entry-get (point) "ZULIP_STREAM")))
     (zulip-get-stream-id realm email token stream #'zulip-org-get-stream-id-hook)))
 
+(defun zulip-org-set-topic-subtree-from-headline ()
+  (interactive)
+  (let* ((heading (org-get-heading t t t t)))
+    (org-set-property "ZULIP_TOPIC" heading)))
+
 (cl-defun zulip-org-get-stream-id-hook (&key data &allow-other-keys)
   (let* ((stream-id (cdr (assoc 'stream_id data)))
          (realm (org-entry-get (point) "ZULIP_REALM"))
