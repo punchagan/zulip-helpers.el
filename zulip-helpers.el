@@ -4,7 +4,7 @@
 (require 'cl)
 (require 's)
 
-(defvar zulip-rc-directory "~/.zulip.d"
+(defvar zulip-rc-directory "~/.config/zuliprc.d"
   "Directory where zuliprc files for realms are stored")
 
 (defun zulip--create-auth-header (email token)
