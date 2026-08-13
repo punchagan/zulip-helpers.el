@@ -151,6 +151,7 @@
          (message (zulip-org-get-subtree-content)))
     (zulip-update-message realm email token message-id message #'zulip-org-update-success-hook)))
 
+;;;###autoload
 (defun zulip-org-dwim-subtree ()
   (interactive)
   (let* ((message-id (org-entry-get (point) "ZULIP_MESSAGE_ID")))
@@ -168,6 +169,7 @@
 
 ;;; streams
 
+;;;###autoload
 (defun zulip-org-set-stream-subtree ()
   (interactive)
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
@@ -183,6 +185,7 @@
          (stream (completing-read "Stream: " names nil t)))
     (org-set-property "ZULIP_STREAM" stream)))
 
+;;;###autoload
 (defun zulip-org-insert-stream-name ()
   (interactive)
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
@@ -198,6 +201,7 @@
          (stream (completing-read "Stream: " names nil t)))
     (insert (format "#**%s**" stream))))
 
+;;;###autoload
 (defun zulip-org-set-send-to-subtree ()
   (interactive)
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
@@ -218,6 +222,7 @@
 
 ;;; topics
 
+;;;###autoload
 (defun zulip-org-set-topic-subtree ()
   (interactive)
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
@@ -228,6 +233,7 @@
          (stream (org-entry-get (point) "ZULIP_STREAM")))
     (zulip-get-stream-id realm email token stream #'zulip-org-get-stream-id-hook)))
 
+;;;###autoload
 (defun zulip-org-set-topic-subtree-from-headline ()
   (interactive)
   (let* ((heading (org-get-heading t t t t)))
@@ -250,6 +256,7 @@
 
 ;;; users
 
+;;;###autoload
 (defun zulip-org-insert-mention ()
   (interactive)
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
@@ -267,6 +274,7 @@
 
 ;; subtree from url
 
+;;;###autoload
 (defun zulip-org-set-subtree-properties-from-url (url)
   (interactive "sURL: ")
   (let* ((parsed-url (url-generic-parse-url url))
