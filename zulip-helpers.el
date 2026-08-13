@@ -48,26 +48,26 @@ check and gets \" (nil)\" appended."
 Uses EMAIL and TOKEN credentials."
   (let ((url (format "https://%s/api/v1/messages" realm)))
     (request
-     url
-     :type "POST"
-     :data `(("type" . ,(or type "stream"))
-             ("to" . ,stream)
-             ("subject" . ,topic)
-             ("content" . ,message))
-     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
-     :parser 'json-read
-     :success success-hook)))
+      url
+      :type "POST"
+      :data `(("type" . ,(or type "stream"))
+              ("to" . ,stream)
+              ("subject" . ,topic)
+              ("content" . ,message))
+      :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+      :parser 'json-read
+      :success success-hook)))
 
 (defun zulip-update-message (realm email token message-id message &optional success-hook)
   "Update a message with new content"
   (let ((url (format "https://%s/api/v1/messages/%s" realm message-id)))
     (request
-     url
-     :type "PATCH"
-     :data `(("content" . ,message))
-     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
-     :parser 'json-read
-     :success success-hook)))
+      url
+      :type "PATCH"
+      :data `(("content" . ,message))
+      :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+      :parser 'json-read
+      :success success-hook)))
 
 (defun zulip-get-messages (realm email token num_before num_after &optional anchor success-hook)
   "Get messages"
@@ -79,21 +79,21 @@ Uses EMAIL and TOKEN credentials."
          (query-string (url-build-query-string params))
          (url (format "https://%s/api/v1/messages?%s" realm query-string)))
     (request
-     url
-     :type "GET"
-     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
-     :parser 'json-read
-     :success success-hook)))
+      url
+      :type "GET"
+      :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+      :parser 'json-read
+      :success success-hook)))
 
 (defun zulip-get-all-streams (realm email token &optional success-hook)
   "Get all streams for the realm"
   (let ((url (format "https://%s/api/v1/streams" realm)))
     (request
-     url
-     :type "GET"
-     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
-     :parser 'json-read
-     :success success-hook)))
+      url
+      :type "GET"
+      :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+      :parser 'json-read
+      :success success-hook)))
 
 (defun zulip-get-stream-id (realm email token stream-name &optional success-hook)
   "Get stream id using the name"
@@ -101,31 +101,31 @@ Uses EMAIL and TOKEN credentials."
                      realm
                      (url-hexify-string stream-name))))
     (request
-     url
-     :type "GET"
-     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
-     :parser 'json-read
-     :success success-hook)))
+      url
+      :type "GET"
+      :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+      :parser 'json-read
+      :success success-hook)))
 
 (defun zulip-get-stream-topics (realm email token stream-id &optional success-hook)
   "Get topics for a stream"
   (let ((url (format "https://%s/api/v1/users/me/%s/topics" realm stream-id)))
     (request
-     url
-     :type "GET"
-     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
-     :parser 'json-read
-     :success success-hook)))
+      url
+      :type "GET"
+      :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+      :parser 'json-read
+      :success success-hook)))
 
 (defun zulip-get-users (realm email token &optional success-hook)
   "Get all users"
   (let ((url (format "https://%s/api/v1/users" realm)))
     (request
-     url
-     :type "GET"
-     :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
-     :parser 'json-read
-     :success success-hook)))
+      url
+      :type "GET"
+      :headers `(("Authorization" . ,(zulip--create-auth-header email token)))
+      :parser 'json-read
+      :success success-hook)))
 
 ;; Org specific helpers
 
@@ -366,7 +366,7 @@ comes back from the API. A guided version of calling
          (user-step (&key data &allow-other-keys)
            (let* ((users (cdr (assoc 'members data)))
                   (names (mapcar (lambda (user) (cons (cdr (assoc 'full_name user))
-                                                       (cdr (assoc 'email user))))
+                                                      (cdr (assoc 'email user))))
                                  users))
                   (user (zulip--completing-read "User: " names))
                   (user-email (cdr (assoc user names))))
