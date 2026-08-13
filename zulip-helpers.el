@@ -167,6 +167,15 @@
 (cl-defun zulip-org-update-success-hook (&key data &allow-other-keys)
   (message "Successfully updated message."))
 
+;;; realms
+
+;;;###autoload
+(defun zulip-org-set-realm-subtree ()
+  (interactive)
+  (let* ((realms (directory-files zulip-rc-directory nil "\\`[^.]"))
+         (realm (completing-read "Realm: " realms nil t)))
+    (org-set-property "ZULIP_REALM" realm)))
+
 ;;; streams
 
 ;;;###autoload
