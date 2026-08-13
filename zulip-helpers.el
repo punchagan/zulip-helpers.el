@@ -14,6 +14,23 @@
 (defun zulip--get-config-path (realm)
   (expand-file-name realm zulip-rc-directory))
 
+(defun zulip--completing-read (prompt collection)
+  "Like `completing-read' (with REQUIRE-MATCH), but resolves to a
+clean Ivy caller regardless of how the enclosing command was
+invoked. Necessary because these calls run inside `request.el'
+async :success callbacks (process filters, not a fresh command
+dispatch) -- so `this-command', which `ivy-completing-read' uses to
+pick a caller for display-transformer lookup, may still be whatever
+it was left as after the command was originally invoked. If that was
+`M-x' (`counsel-M-x'), Doom's `counsel-M-x' display transformer gets
+pulled in for what's actually a plain string list: its
+`counsel-M-x-transformer' checks `(symbolp alias)' to decide whether
+to show an alias target, but `nil' is itself a symbol, so any
+ordinary candidate with no function definition still passes that
+check and gets \" (nil)\" appended."
+  (let ((this-command 'zulip--completing-read))
+    (completing-read prompt collection nil t)))
+
 (defun zulip--parse-config (path)
   (with-current-buffer (find-file-noselect path)
     (let (email token)
@@ -191,7 +208,7 @@
 (cl-defun zulip-org-set-stream-hook (&key data &allow-other-keys)
   (let* ((streams (cdr (assoc 'streams data)))
          (names (mapcar (lambda (stream) (cdr (assoc 'name stream))) streams))
-         (stream (completing-read "Stream: " names nil t)))
+         (stream (zulip--completing-read "Stream: " names)))
     (org-set-property "ZULIP_STREAM" stream)))
 
 ;;;###autoload
@@ -207,7 +224,7 @@
 (cl-defun zulip-org-insert-stream-name-hook (&key data &allow-other-keys)
   (let* ((streams (cdr (assoc 'streams data)))
          (names (mapcar (lambda (stream) (cdr (assoc 'name stream))) streams))
-         (stream (completing-read "Stream: " names nil t)))
+         (stream (zulip--completing-read "Stream: " names)))
     (insert (format "#**%s**" stream))))
 
 ;;;###autoload
@@ -225,7 +242,7 @@
          (names (mapcar (lambda (user) (cons (cdr (assoc 'full_name user))
                                              (cdr (assoc 'email user))))
                         users))
-         (user (completing-read "User: " names nil t))
+         (user (zulip--completing-read "User: " names))
          (email (cdr (assoc user names))))
     (org-set-property "ZULIP_SEND_TO" email)))
 
@@ -260,7 +277,7 @@
 (cl-defun zulip-org-stream-topics-hook (&key data &allow-other-keys)
   (let* ((topics (cdr (assoc 'topics data)))
          (names (mapcar (lambda (topic) (cdr (assoc 'name topic))) topics))
-         (topic (completing-read "Topic: " names nil t)))
+         (topic (zulip--completing-read "Topic: " names)))
     (org-set-property "ZULIP_TOPIC" topic)))
 
 ;;; users
@@ -278,7 +295,7 @@
 (cl-defun zulip-org-insert-mention-hook (&key data &allow-other-keys)
   (let* ((users (cdr (assoc 'members data)))
          (names (mapcar (lambda (user) (cdr (assoc 'full_name user))) users))
-         (user (completing-read "User: " names nil t)))
+         (user (zulip--completing-read "User: " names)))
     (insert (format "@**%s**" user))))
 
 ;; subtree from url
