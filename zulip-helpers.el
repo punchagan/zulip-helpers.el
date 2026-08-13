@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 (require 'request)
 ;; Used for exporting org to markdown format
 (require 'ox-gfm)
@@ -186,12 +187,13 @@ check and gets \" (nil)\" appended."
 
 ;;; realms
 
+(defun zulip--select-realm ()
+  (zulip--completing-read "Realm: " (directory-files zulip-rc-directory nil "\\`[^.]")))
+
 ;;;###autoload
 (defun zulip-org-set-realm-subtree ()
   (interactive)
-  (let* ((realms (directory-files zulip-rc-directory nil "\\`[^.]"))
-         (realm (completing-read "Realm: " realms nil t)))
-    (org-set-property "ZULIP_REALM" realm)))
+  (org-set-property "ZULIP_REALM" (zulip--select-realm)))
 
 ;;; streams
 
@@ -324,5 +326,51 @@ check and gets \" (nil)\" appended."
     (org-set-property "ZULIP_STREAM" stream)
     (org-set-property "ZULIP_TOPIC" topic)
     (org-set-property "ZULIP_MESSAGE_ID" (number-to-string message-id))))
+
+;;; destination wizard
+
+;;;###autoload
+(defun zulip-org-set-destination-subtree ()
+  "Interactively set up where this subtree's Zulip message will be
+sent: realm, then either a stream + topic or a private-message
+recipient, prompting for each in turn as each prior choice's data
+comes back from the API. A guided version of calling
+`zulip-org-set-realm-subtree' followed by either
+`zulip-org-set-stream-subtree' + `zulip-org-set-topic-subtree', or
+`zulip-org-set-send-to-subtree', one at a time by hand."
+  (interactive)
+  (let* ((realm (zulip--select-realm))
+         (config-path (zulip--get-config-path realm))
+         (auth (zulip--parse-config config-path))
+         (email (car auth))
+         (token (cadr auth))
+         (type (zulip--completing-read "Message type: " '("Stream" "Private"))))
+    (org-set-property "ZULIP_REALM" realm)
+    (cl-labels
+        ((topic-step (&key data &allow-other-keys)
+           (let* ((topics (cdr (assoc 'topics data)))
+                  (names (mapcar (lambda (topic) (cdr (assoc 'name topic))) topics))
+                  (topic (zulip--completing-read "Topic: " names)))
+             (org-set-property "ZULIP_TOPIC" topic)))
+         (stream-id-step (&key data &allow-other-keys)
+           (let ((stream-id (cdr (assoc 'stream_id data))))
+             (zulip-get-stream-topics realm email token stream-id #'topic-step)))
+         (stream-step (&key data &allow-other-keys)
+           (let* ((streams (cdr (assoc 'streams data)))
+                  (names (mapcar (lambda (stream) (cdr (assoc 'name stream))) streams))
+                  (stream (zulip--completing-read "Stream: " names)))
+             (org-set-property "ZULIP_STREAM" stream)
+             (zulip-get-stream-id realm email token stream #'stream-id-step)))
+         (user-step (&key data &allow-other-keys)
+           (let* ((users (cdr (assoc 'members data)))
+                  (names (mapcar (lambda (user) (cons (cdr (assoc 'full_name user))
+                                                       (cdr (assoc 'email user))))
+                                 users))
+                  (user (zulip--completing-read "User: " names))
+                  (user-email (cdr (assoc user names))))
+             (org-set-property "ZULIP_SEND_TO" user-email))))
+      (if (string= type "Stream")
+          (zulip-get-all-streams realm email token #'stream-step)
+        (zulip-get-users realm email token #'user-step)))))
 
 (provide 'zulip-helpers)
