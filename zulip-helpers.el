@@ -12,7 +12,7 @@
                       (format "%s:%s" email token))))
 
 (defun zulip--get-config-path (realm)
-  (expand-file-name (format "%s.zuliprc" realm) zulip-rc-directory))
+  (expand-file-name realm zulip-rc-directory))
 
 (defun zulip--parse-config (path)
   (with-current-buffer (find-file-noselect path)
@@ -129,7 +129,7 @@
 
 (defun zulip-org-send-message-subtree ()
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
-         (config-path (expand-file-name (format "%s.zuliprc" realm) zulip-rc-directory))
+         (config-path (zulip--get-config-path realm))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth))
@@ -143,7 +143,7 @@
 
 (defun zulip-org-update-message-subtree ()
   (let* ((realm (org-entry-get (point) "ZULIP_REALM"))
-         (config-path (expand-file-name (format "%s.zuliprc" realm) "~/.zulip.d"))
+         (config-path (zulip--get-config-path realm))
          (auth (zulip--parse-config config-path))
          (email (car auth))
          (token (cadr auth))
