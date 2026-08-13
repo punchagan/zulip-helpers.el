@@ -43,7 +43,9 @@ check and gets \" (nil)\" appended."
       `(,email ,token))))
 
 (defun zulip-send-message (realm email token stream topic message &optional type success-hook)
-  "Send a message to a given realm, stream & topic"
+  "Send a MESSAGE to a given REALM, STREAM & TOPIC.
+
+Uses EMAIL and TOKEN credentials."
   (let ((url (format "https://%s/api/v1/messages" realm)))
     (request
      url
